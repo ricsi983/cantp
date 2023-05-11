@@ -112,8 +112,8 @@ TEST(CanTpTest, MultiFrameTest)
     uint8_t testPayload[25] =  {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
     uint8_t expectedFirstFrame[8] = {0x10, 25, 1, 2, 3, 4, 5, 1};
     uint8_t expectedConsecutiveFrame1[8] = {0x20, 2, 3, 4, 5, 1, 2, 3};
-    uint8_t expectedConsecutiveFrame2[8] = {0x20, 4, 5, 1, 2, 3, 4, 5};
-    uint8_t expectedConsecutiveFrame3[6] = {0x20, 1, 2, 3, 4, 5};
+    uint8_t expectedConsecutiveFrame2[8] = {0x21, 4, 5, 1, 2, 3, 4, 5};
+    uint8_t expectedConsecutiveFrame3[6] = {0x22, 1, 2, 3, 4, 5};
     auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload));
 
     ASSERT_FALSE(memcmp(&multiFrameMessage.firstFrame[0], expectedFirstFrame, multiFrameMessage.firstFrame.size()));
@@ -128,11 +128,10 @@ TEST(CanTpTest, MultiFrameTestWithBlockSize)
     uint8_t expectedFirstFrame[8] = {0x10, 40, 1, 2, 3, 4, 5, 1};
     uint8_t expectedConsecutiveFrame1[8] = {0x20, 2, 3, 4, 5, 1, 2, 3};
     uint8_t expectedConsecutiveFrame2[8] = {0x21, 4, 5, 1, 2, 3, 4, 5};
-    uint8_t expectedConsecutiveFrame3[8] = {0x20, 1, 2, 3, 4, 5, 1, 2};
-    uint8_t expectedConsecutiveFrame4[8] = {0x21, 3, 4, 5, 1, 2, 3, 4};
-    uint8_t expectedConsecutiveFrame5[8] = {0x20, 5, 1, 2, 3, 4, 5};
+    uint8_t expectedConsecutiveFrame3[8] = {0x22, 1, 2, 3, 4, 5, 1, 2};
+    uint8_t expectedConsecutiveFrame4[8] = {0x23, 3, 4, 5, 1, 2, 3, 4};
+    uint8_t expectedConsecutiveFrame5[8] = {0x24, 5, 1, 2, 3, 4, 5};
     auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload));
-    multiFrameMessage.AddFrameCounters(2);
 
     ASSERT_FALSE(memcmp(&multiFrameMessage.firstFrame[0], expectedFirstFrame, multiFrameMessage.firstFrame.size()));
     ASSERT_FALSE(memcmp(&multiFrameMessage.consecutiveFrames[0][0], expectedConsecutiveFrame1, multiFrameMessage.consecutiveFrames[0].size()));
@@ -148,7 +147,7 @@ TEST(CanTpTest, SingleFrameSendTest)
    canInterface->SetSendFunction(MockSendInterface);
    canInterface->SetReceiveFunction(MockReceiveInterface);
    canInterface->SetTimeoutFunction(MockSetTimeout);
-   std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 3000, 5, 100);
+   std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 5, 100);
 
    uint8_t testPayload[5] = {1, 2, 3, 1, 2};
    uint8_t expectedPayload[6] = {5, 1, 2, 3, 1, 2};
@@ -161,21 +160,21 @@ TEST(CanTpTest, SingleFrameSendTest)
 
 TEST(CanTpTest, MultiFrameSendTest)
 {
-    mockInterface.ClearRxMessages(0x1C9);
-    mockInterface.ClearTxMessages(0xDC);
+   mockInterface.ClearRxMessages(0x1C9);
+   mockInterface.ClearTxMessages(0xDC);
    std::shared_ptr<CanInterface> canInterface = std::make_shared<CanInterface>();
    canInterface->SetSendFunction(MockSendInterface);
    canInterface->SetReceiveFunction(MockReceiveInterface);
    canInterface->SetTimeoutFunction(MockSetTimeout);
-   std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 3000, 5, 100);
+   std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 5, 100);
 
    uint8_t testPayload[40] =  {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
    uint8_t expectedFirstFrame[8] = {0x10, 40, 1, 2, 3, 4, 5, 1};
    uint8_t expectedConsecutiveFrame1[8] = {0x20, 2, 3, 4, 5, 1, 2, 3};
    uint8_t expectedConsecutiveFrame2[8] = {0x21, 4, 5, 1, 2, 3, 4, 5};
-   uint8_t expectedConsecutiveFrame3[8] = {0x20, 1, 2, 3, 4, 5, 1, 2};
-   uint8_t expectedConsecutiveFrame4[8] = {0x21, 3, 4, 5, 1, 2, 3, 4};
-   uint8_t expectedConsecutiveFrame5[8] = {0x20, 5, 1, 2, 3, 4, 5};
+   uint8_t expectedConsecutiveFrame3[8] = {0x22, 1, 2, 3, 4, 5, 1, 2};
+   uint8_t expectedConsecutiveFrame4[8] = {0x23, 3, 4, 5, 1, 2, 3, 4};
+   uint8_t expectedConsecutiveFrame5[8] = {0x24, 5, 1, 2, 3, 4, 5};
    uint32_t testSourceId = 0x1C9;
    uint32_t testDestinationId = 0xDC;
    std::vector<uint8_t> flowControlFrame1 = {0, 0, 0, 0, 0, 0, 0, 0}; 
@@ -197,3 +196,66 @@ TEST(CanTpTest, MultiFrameSendTest)
    ASSERT_FALSE(memcmp(&txFrames[5][0], expectedConsecutiveFrame5, txFrames[5].size()));
 }
 
+TEST(CanTpTest, SingleFrameReceiveTest)
+{
+   std::shared_ptr<CanInterface> canInterface = std::make_shared<CanInterface>();
+   canInterface->SetSendFunction(MockSendInterface);
+   canInterface->SetReceiveFunction(MockReceiveInterface);
+   canInterface->SetTimeoutFunction(MockSetTimeout);
+   std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 5, 100);
+
+   uint8_t testPayload[6] = {5, 1, 2, 3, 1, 2};
+
+   uint32_t testSourceId = 0x1C9;
+   uint32_t testDestinationId = 0xDC;
+   mockInterface.AddMessageToRx(testSourceId, testPayload, sizeof(testPayload));
+   std::vector<uint8_t> payloadReceived;
+   payloadReceived.resize(4096);
+   uint16_t receivedPayloadLength = 0;
+   canTp->ReceiveMessage(&payloadReceived[0], receivedPayloadLength, testSourceId, testDestinationId);
+   auto txFrames = mockInterface.GetTxMessages(0xDC);
+   ASSERT_FALSE(memcmp(&testPayload[1], &payloadReceived[0], 5));
+}
+
+TEST(CanTpTest, MultiFrameReceiveTest)
+{
+   mockInterface.ClearRxMessages(0x1C9);
+   mockInterface.ClearTxMessages(0xDC);
+   std::shared_ptr<CanInterface> canInterface = std::make_shared<CanInterface>();
+   canInterface->SetSendFunction(MockSendInterface);
+   canInterface->SetReceiveFunction(MockReceiveInterface);
+   canInterface->SetTimeoutFunction(MockSetTimeout);
+   std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 2, 100);
+
+   uint8_t testPayload[40] =  {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
+   uint8_t firstFrame[8] = {0x10, 40, 1, 2, 3, 4, 5, 1};
+   uint8_t consecutiveFrame1[8] = {0x20, 2, 3, 4, 5, 1, 2, 3};
+   uint8_t consecutiveFrame2[8] = {0x21, 4, 5, 1, 2, 3, 4, 5};
+   uint8_t consecutiveFrame3[8] = {0x22, 1, 2, 3, 4, 5, 1, 2};
+   uint8_t consecutiveFrame4[8] = {0x23, 3, 4, 5, 1, 2, 3, 4};
+   uint8_t consecutiveFrame5[7] = {0x24, 5, 1, 2, 3, 4, 5};
+   uint32_t testSourceId = 0x1C9;
+   uint32_t testDestinationId = 0xDC;
+   std::vector<uint8_t> flowControlFrame1 = {0, 0, 0, 0, 0, 0, 0, 0}; 
+   Utils::SetBits<uint8_t>(flowControlFrame1[0], 7, 4, 3);
+   Utils::SetBits<uint8_t>(flowControlFrame1[0], 3, 0, 0);
+   flowControlFrame1[1] = 2;
+   flowControlFrame1[2] = 100;
+   mockInterface.AddMessageToRx(testSourceId, firstFrame, sizeof(firstFrame));
+   mockInterface.AddMessageToRx(testSourceId, consecutiveFrame1, sizeof(consecutiveFrame1));
+   mockInterface.AddMessageToRx(testSourceId, consecutiveFrame2, sizeof(consecutiveFrame2));
+   mockInterface.AddMessageToRx(testSourceId, consecutiveFrame3, sizeof(consecutiveFrame3));
+   mockInterface.AddMessageToRx(testSourceId, consecutiveFrame4, sizeof(consecutiveFrame4));
+   mockInterface.AddMessageToRx(testSourceId, consecutiveFrame5, sizeof(consecutiveFrame5));
+
+   std::vector<uint8_t> payloadReceived;
+   payloadReceived.resize(4096);
+   uint16_t receivedPayloadLength = 0;
+   canTp->ReceiveMessage(&payloadReceived[0], receivedPayloadLength, testSourceId, testDestinationId);
+   auto txFrames = mockInterface.GetTxMessages(0xDC);
+
+   ASSERT_FALSE(memcmp(&txFrames[0][0], &flowControlFrame1[0], flowControlFrame1.size()));
+   ASSERT_FALSE(memcmp(&txFrames[1][0], &flowControlFrame1[0], flowControlFrame1.size()));
+   ASSERT_FALSE(memcmp(&txFrames[2][0], &flowControlFrame1[0], flowControlFrame1.size()));
+   ASSERT_FALSE(memcmp(&payloadReceived[0], testPayload, receivedPayloadLength));
+}

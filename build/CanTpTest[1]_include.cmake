@@ -1,5 +1,0 @@
-if(EXISTS "/Users/hanaszrichard/projects/cantp/build/CanTpTest[1]_tests.cmake")
-  include("/Users/hanaszrichard/projects/cantp/build/CanTpTest[1]_tests.cmake")
-else()
-  add_test(CanTpTest_NOT_BUILT CanTpTest_NOT_BUILT)
-endif()

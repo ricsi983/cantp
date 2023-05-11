@@ -35,7 +35,7 @@ public:
     MultiFrameMessage(uint8_t* buffer, uint16_t length);
     std::vector<uint8_t> GetPayload();
     MultiFrameMessage() = default;
-    void AddFrameCounters(uint8_t blockSize);
+    void AddFrameCounters();
 };
 
 class CanTp
@@ -52,7 +52,7 @@ class CanTp
         bool SendBlock(std::vector<std::vector<uint8_t>>& block, uint32_t source, uint32_t destination);
         E_FRAME_TYPE Listen(uint32_t source, uint32_t destination);
     public:
-        CanTp(std::shared_ptr<CanInterface> interface, uint32_t timeout, uint8_t blockSize, uint8_t separationTime);
+        CanTp(std::shared_ptr<CanInterface> interface, /*uint32_t timeout,*/ uint8_t blockSize, uint8_t separationTime);
         void SendMessage(uint8_t* buffer, uint16_t length, uint32_t source, uint32_t destination);
         void ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source, uint32_t destination);
 };
