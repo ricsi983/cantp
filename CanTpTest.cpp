@@ -102,7 +102,18 @@ TEST(CanTpTest, SingleFrameTest)
 {
     uint8_t testPayload[5] = {1, 2, 3, 1, 2};
     uint8_t expectedPayload[6] = {5, 1, 2, 3, 1, 2};
-    auto singleFrameMessage = SingleFrameMessage(testPayload, sizeof(testPayload));
+    auto singleFrameMessage = SingleFrameMessage(testPayload, sizeof(testPayload), 8);
+    ASSERT_EQ(singleFrameMessage.singleFrame.size(), sizeof(expectedPayload));
+    ASSERT_FALSE(memcmp(&singleFrameMessage.singleFrame[0], expectedPayload, singleFrameMessage.singleFrame.size()));
+}
+
+TEST(CanTpTest, SingleFrameTestFd)
+{
+    uint8_t testPayload[60] = {1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2,
+    1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2};
+    uint8_t expectedPayload[61] = {60, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2,
+    1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2, 1, 2, 3, 1, 2};
+    auto singleFrameMessage = SingleFrameMessage(testPayload, sizeof(testPayload), 64);
     ASSERT_EQ(singleFrameMessage.singleFrame.size(), sizeof(expectedPayload));
     ASSERT_FALSE(memcmp(&singleFrameMessage.singleFrame[0], expectedPayload, singleFrameMessage.singleFrame.size()));
 }
@@ -114,7 +125,27 @@ TEST(CanTpTest, MultiFrameTest)
     uint8_t expectedConsecutiveFrame1[8] = {0x20, 2, 3, 4, 5, 1, 2, 3};
     uint8_t expectedConsecutiveFrame2[8] = {0x21, 4, 5, 1, 2, 3, 4, 5};
     uint8_t expectedConsecutiveFrame3[6] = {0x22, 1, 2, 3, 4, 5};
-    auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload));
+    auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload), 8);
+
+    ASSERT_FALSE(memcmp(&multiFrameMessage.firstFrame[0], expectedFirstFrame, multiFrameMessage.firstFrame.size()));
+    ASSERT_FALSE(memcmp(&multiFrameMessage.consecutiveFrames[0][0], expectedConsecutiveFrame1, multiFrameMessage.consecutiveFrames[0].size()));
+    ASSERT_FALSE(memcmp(&multiFrameMessage.consecutiveFrames[1][0], expectedConsecutiveFrame2, multiFrameMessage.consecutiveFrames[1].size()));
+    ASSERT_FALSE(memcmp(&multiFrameMessage.consecutiveFrames[2][0], expectedConsecutiveFrame3, multiFrameMessage.consecutiveFrames[2].size()));
+}
+
+TEST(CanTpTest, MultiFrameTestFd)
+{
+    uint8_t testPayload[200] =  {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5,
+    1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5,
+    1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, };
+    uint8_t expectedFirstFrame[64] = {0x10, 200, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5,
+    1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2};
+    uint8_t expectedConsecutiveFrame1[64] = {0x20, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5,
+    1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
+    uint8_t expectedConsecutiveFrame2[64] = {0x21, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 
+    1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3};
+    uint8_t expectedConsecutiveFrame3[13] = {0x22, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
+    auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload), 64);
 
     ASSERT_FALSE(memcmp(&multiFrameMessage.firstFrame[0], expectedFirstFrame, multiFrameMessage.firstFrame.size()));
     ASSERT_FALSE(memcmp(&multiFrameMessage.consecutiveFrames[0][0], expectedConsecutiveFrame1, multiFrameMessage.consecutiveFrames[0].size()));
@@ -131,7 +162,7 @@ TEST(CanTpTest, MultiFrameTestWithBlockSize)
     uint8_t expectedConsecutiveFrame3[8] = {0x22, 1, 2, 3, 4, 5, 1, 2};
     uint8_t expectedConsecutiveFrame4[8] = {0x23, 3, 4, 5, 1, 2, 3, 4};
     uint8_t expectedConsecutiveFrame5[8] = {0x24, 5, 1, 2, 3, 4, 5};
-    auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload));
+    auto multiFrameMessage = MultiFrameMessage(testPayload, sizeof(testPayload), 8);
 
     ASSERT_FALSE(memcmp(&multiFrameMessage.firstFrame[0], expectedFirstFrame, multiFrameMessage.firstFrame.size()));
     ASSERT_FALSE(memcmp(&multiFrameMessage.consecutiveFrames[0][0], expectedConsecutiveFrame1, multiFrameMessage.consecutiveFrames[0].size()));
@@ -147,6 +178,7 @@ TEST(CanTpTest, SingleFrameSendTest)
    canInterface->SetSendFunction(MockSendInterface);
    canInterface->SetReceiveFunction(MockReceiveInterface);
    canInterface->SetTimeoutFunction(MockSetTimeout);
+   canInterface->SetCanFd(false);
    std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 5, 100);
 
    uint8_t testPayload[5] = {1, 2, 3, 1, 2};
@@ -166,6 +198,7 @@ TEST(CanTpTest, MultiFrameSendTest)
    canInterface->SetSendFunction(MockSendInterface);
    canInterface->SetReceiveFunction(MockReceiveInterface);
    canInterface->SetTimeoutFunction(MockSetTimeout);
+   canInterface->SetCanFd(false);
    std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 5, 100);
 
    uint8_t testPayload[40] =  {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
@@ -202,6 +235,7 @@ TEST(CanTpTest, SingleFrameReceiveTest)
    canInterface->SetSendFunction(MockSendInterface);
    canInterface->SetReceiveFunction(MockReceiveInterface);
    canInterface->SetTimeoutFunction(MockSetTimeout);
+   canInterface->SetCanFd(false);
    std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 5, 100);
 
    uint8_t testPayload[6] = {5, 1, 2, 3, 1, 2};
@@ -225,6 +259,7 @@ TEST(CanTpTest, MultiFrameReceiveTest)
    canInterface->SetSendFunction(MockSendInterface);
    canInterface->SetReceiveFunction(MockReceiveInterface);
    canInterface->SetTimeoutFunction(MockSetTimeout);
+   canInterface->SetCanFd(false);
    std::unique_ptr<CanTp> canTp = std::make_unique<CanTp>(canInterface, 2, 100);
 
    uint8_t testPayload[40] =  {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};

@@ -29,3 +29,13 @@ void CanInterface::SetTimeout(uint32_t timeout)
 {
     _setTimeoutFunction(timeout);
 }
+
+bool CanInterface::IsCanFd()
+{
+    return _canFd;
+}
+
+void CanInterface::SetCanFd(bool canFd)
+{
+    _canFd = canFd;
+}
