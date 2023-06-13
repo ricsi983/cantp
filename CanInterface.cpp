@@ -15,12 +15,12 @@ void CanInterface::SetTimeoutFunction(SetTimeoutFunctionType setTimeoutFunction)
     _setTimeoutFunction = setTimeoutFunction;
 }
 
-uint32_t CanInterface::SendMessage(uint8_t* buffer, uint8_t length, uint32_t destination)
+uint32_t CanInterface::SendMessage(uint8_t* buffer, uint32_t length, uint32_t destination)
 {
     return _sendFunction(buffer, length, destination);
 }
 
-uint32_t CanInterface::ReceiveMessage(uint8_t* buffer, uint8_t* length, uint32_t source)
+uint32_t CanInterface::ReceiveMessage(uint8_t* buffer, uint32_t* length, uint32_t source)
 {
     return _receiveFunction(buffer, length, source);
 }

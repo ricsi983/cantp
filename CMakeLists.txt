@@ -25,6 +25,20 @@ add_executable(
   CanInterface.cpp
   CanTp.h
   CanTpTest.cpp
+  CanTp_2.h
+  CanTp_2.cpp
+  CanTypes.h
+  CanTpConnection.h
+  CanTpSendManager.h
+  CanTpReceiveManager.h
+  CanTpSendManager.cpp
+  CanTpReceiveManager.cpp
+  SingleFrameBuilder.h
+  MultiFrameBuilder.h
+  FrameBuilderTests.cpp
+  CanTpTests_2.cpp
+  MockInterface.h
+  MockInterface.cpp
 )
 
 

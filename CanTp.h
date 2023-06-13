@@ -15,7 +15,7 @@ enum class E_FRAME_TYPE : uint8_t
 class SingleFrameMessage
 {
 private:
-    void CreateSingleFrame(uint8_t* buffer, uint32_t length); 
+    void CreateSingleFrame(uint8_t* buffer, uint8_t length); 
     uint8_t _frameSize;   
 public:
     std::vector<uint8_t> singleFrame;

@@ -3,7 +3,7 @@
 #include"CanTp.h"
 #include"Utils.h"
 
-void SingleFrameMessage::CreateSingleFrame(uint8_t* buffer, uint32_t length)
+void SingleFrameMessage::CreateSingleFrame(uint8_t* buffer, uint8_t length)
 {
     uint8_t firstByte = 0;
     Utils::SetBits(firstByte, 7, 4, static_cast<uint8_t>(E_FRAME_TYPE::SingleFrame));
@@ -120,7 +120,7 @@ bool CanTp::Connect(std::vector<uint8_t>& firstFrame, uint32_t source, uint32_t 
 {
     std::vector<uint8_t> flowControlFrame;
     flowControlFrame.resize(8);
-    uint8_t length;
+    uint32_t length;
     if(_interface->SendMessage(&firstFrame[0], firstFrame.size(), destination) == 0)
         if(_interface->ReceiveMessage(&flowControlFrame[0], &length, source) == 0)
         {
@@ -150,7 +150,7 @@ bool CanTp::SendBlock(std::vector<std::vector<uint8_t>>& block, uint32_t source,
     {
         std::vector<uint8_t> flowControlFrame;
         flowControlFrame.resize(8);
-        uint8_t length = 0;
+        uint32_t length = 0;
         _interface->ReceiveMessage(&flowControlFrame[0], &length, source);
         ParseFlowControlFrame(flowControlFrame);
     }
@@ -161,7 +161,7 @@ E_FRAME_TYPE CanTp::Listen(uint32_t source, uint32_t destination)
 {
     std::vector<uint8_t> firstFrame;
     firstFrame.resize(8);
-    uint8_t length = 0;
+    uint32_t length = 0;
     if(_interface->ReceiveMessage(&firstFrame[0], &length, source) == 0)
         return static_cast<E_FRAME_TYPE>(firstFrame[0] >> 4);
 }
@@ -189,7 +189,6 @@ void CanTp::SendMessage(uint8_t* buffer, uint16_t length, uint32_t source, uint3
                 if(!SendBlock(multiFrameMessage.consecutiveFrames, source, destination))
                     break;
         }
-
     }
 }
 
@@ -197,7 +196,7 @@ void CanTp::ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source, u
 {
     std::vector<uint8_t> firstFrame;
     firstFrame.resize(8);
-    uint8_t firstFrameLength = 0;
+    uint32_t firstFrameLength = 0;
     if(_interface->ReceiveMessage(&firstFrame[0], &firstFrameLength, source) == 0)
     {
         if(static_cast<E_FRAME_TYPE>(firstFrame[0] >> 4) == E_FRAME_TYPE::SingleFrame)
@@ -228,7 +227,7 @@ void CanTp::ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source, u
                 }
                 else
                 {
-                    uint8_t lengthOfBlock = 0;
+                    uint32_t lengthOfBlock = 0;
                     _interface->ReceiveMessage(block, &lengthOfBlock, source);
                     multiFrameMessage.consecutiveFrames.emplace_back(block, block + lengthOfBlock);
                     ++blockIndex;
