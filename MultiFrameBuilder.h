@@ -49,6 +49,15 @@ private:
     return firstByte;
   }
 
+  void
+  FillExtendedLength ()
+  {
+    _buffer[2] = static_cast<uint8_t> (_length >> 24);
+    _buffer[3] = static_cast<uint8_t> (_length >> 16);
+    _buffer[4] = static_cast<uint8_t> (_length >> 8);
+    _buffer[5] = static_cast<uint8_t> (_length);
+  }
+
   uint8_t
   CalculateFrameLength ()
   {
@@ -61,16 +70,16 @@ private:
 public:
   MultiFrameBuilder () : _length (0), _index (0), _sequenceNumber (1) {}
 
-  frame_type &
-  BuildFirstFrame (uint8_t *payload, uint32_t length)
+  uint8_t *
+  BuildFirstFrame (uint8_t *payload, uint32_t payloadLength)
   {
-    _length = length;
+    _length = payloadLength;
 
     if (_length <= MULTI_FRAME_MAX_SIZE)
       {
-        _buffer[0] = CreateFirstFrameFirstByte (length);
-        _buffer[1] = (static_cast<uint8_t> (length));
-        _index += _buffer.size () - FIRST_FRAME_HEADER_LENGTH;
+        _buffer[0] = CreateFirstFrameFirstByte (_length);
+        _buffer[1] = (static_cast<uint8_t> (_length));
+        _index += (_buffer.size () - FIRST_FRAME_HEADER_LENGTH);
         std::copy_n (payload, _index,
                      std::begin (_buffer) + FIRST_FRAME_HEADER_LENGTH);
       }
@@ -78,28 +87,33 @@ public:
       {
         _buffer[0] = CreateFirstFrameFirstByteExtended ();
         _buffer[1] = 0;
-        std::copy_n (&length, sizeof (length),
-                     std::begin (_buffer) + FIRST_FRAME_HEADER_LENGTH);
+        FillExtendedLength ();
+        _index += (_buffer.size () - EXTENDED_FIRST_FRAME_HEADER_LENGTH);
+        std::copy_n (payload, _index,
+                     std::begin (_buffer)
+                         + EXTENDED_FIRST_FRAME_HEADER_LENGTH);
       }
-    return _buffer;
+    return _buffer.data ();
   }
 
-  frame_type &
-  BuildConsecutiveFrame (uint8_t *payload)
+  uint8_t *
+  BuildConsecutiveFrame (uint8_t *payload, uint8_t &frameLength)
   {
     _buffer[0] = CreateConsecutiveFrameFirstByte ();
-    uint8_t frameLength = CalculateFrameLength ();
+    frameLength = CalculateFrameLength ();
     std::copy_n (payload + _index, frameLength,
                  std::begin (_buffer) + CONSECUTIVE_FRAME_HEADER_LENGTH);
     _index += frameLength;
+    frameLength += CONSECUTIVE_FRAME_HEADER_LENGTH;
+    CanUtils::AddPadding (_buffer.data (), frameLength);
     _sequenceNumber = (_sequenceNumber + 1) % (MAX_SEQUENCE_NUMBER + 1);
-    return _buffer;
+    return _buffer.data ();
   }
 
   bool
   IsFinished ()
   {
-    return (_index >= _length);
+    return (_index == _length);
   }
   static bool IsMultiFrame (uint32_t length);
 };

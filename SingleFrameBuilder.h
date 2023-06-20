@@ -38,7 +38,8 @@ private:
 public:
   SingleFrameBuilder () = default;
   static bool IsSingleFrame (uint32_t length);
-  frame_type &BuildFrame (uint8_t *payload, uint32_t length);
+  uint8_t *BuildFrame (uint8_t *payload, uint32_t payloadLength,
+                       uint8_t &frameLength);
 };
 
 template <>
@@ -57,25 +58,35 @@ SingleFrameBuilder<CanFd>::IsSingleFrame (uint32_t length)
 }
 
 template <>
-SingleFrameBuilder<StandardCan>::frame_type &
-SingleFrameBuilder<StandardCan>::BuildFrame (uint8_t *payload, uint32_t length)
+uint8_t *
+SingleFrameBuilder<StandardCan>::BuildFrame (uint8_t *payload,
+                                             uint32_t payloadLength,
+                                             uint8_t &frameLength)
 {
-  _buffer[0] = CreateFirstByte (length);
-  std::copy_n (payload, length,
+  frameLength = 0;
+  _buffer[0] = CreateFirstByte (payloadLength);
+  frameLength += STANDARD_SINGLE_FRAME_HEADER_LENGTH;
+  std::copy_n (payload, payloadLength,
                std::begin (_buffer) + STANDARD_SINGLE_FRAME_HEADER_LENGTH);
-
-  return _buffer;
+  frameLength += payloadLength;
+  return _buffer.data ();
 }
 
 template <>
-SingleFrameBuilder<CanFd>::frame_type &
-SingleFrameBuilder<CanFd>::BuildFrame (uint8_t *payload, uint32_t length)
+uint8_t *
+SingleFrameBuilder<CanFd>::BuildFrame (uint8_t *payload,
+                                       uint32_t payloadLength,
+                                       uint8_t &frameLength)
 {
 
+  frameLength = 0;
   _buffer[0] = CreateFirstByteExtended ();
-  _buffer[1] = static_cast<uint8_t> (length);
+  _buffer[1] = static_cast<uint8_t> (payloadLength);
+  frameLength += FD_SINGLE_FRAME_HEADER_LENGTH;
 
-  std::copy_n (payload, length,
+  std::copy_n (payload, payloadLength,
                std::begin (_buffer) + FD_SINGLE_FRAME_HEADER_LENGTH);
-  return _buffer;
+  frameLength += payloadLength;
+  CanUtils::AddPadding (_buffer.data (), frameLength);
+  return _buffer.data ();
 }
