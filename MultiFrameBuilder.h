@@ -12,12 +12,17 @@ template <typename T> class MultiFrameBuilder
       typename std::conditional<std::is_same<T, StandardCan>::value,
                                 std::array<uint8_t, STANDARD_CAN_LENGTH>,
                                 std::array<uint8_t, CAN_FD_LENGTH> >::type;
+  using microseconds = std::chrono::microseconds;
+  using milliseconds = std::chrono::milliseconds;
 
 private:
   frame_type _buffer;
   uint32_t _length;
   uint32_t _index;
   uint8_t _sequenceNumber;
+  microseconds _separationTime;
+  uint8_t _blockSize;
+  E_FLOW_STATUS _flowStatus;
 
   uint8_t
   CreateFirstFrameFirstByte (uint32_t length)
@@ -67,8 +72,30 @@ private:
                : (_length - _index);
   }
 
+  microseconds
+  ConvertSeparationTime (uint8_t st)
+  {
+    if (st <= ST_MS_RANGE_MAX)
+      {
+        return std::chrono::duration_cast<microseconds> ((milliseconds (st)));
+      }
+    else if (st > ST_MS_RESERVED_MAX && st <= ST_US_RANGE_MAX)
+      {
+        return std::chrono::microseconds (st - ST_US_RANGE_RESERVED_MIN) * 100;
+      }
+    else
+      {
+        return std::chrono::duration_cast<microseconds> (
+            (milliseconds (ST_MS_RANGE_MAX)));
+      }
+  }
+
 public:
-  MultiFrameBuilder () : _length (0), _index (0), _sequenceNumber (1) {}
+  MultiFrameBuilder ()
+      : _length (0), _index (0), _sequenceNumber (1), _separationTime (0),
+        _blockSize (0), _flowStatus (E_FLOW_STATUS::Continue)
+  {
+  }
 
   uint8_t *
   BuildFirstFrame (uint8_t *payload, uint32_t payloadLength)
@@ -110,25 +137,31 @@ public:
     return _buffer.data ();
   }
 
+  void
+  ParseFlowControlFrame (uint8_t *frame)
+  {
+    _flowStatus = static_cast<E_FLOW_STATUS> (frame[0] & 0x0F);
+    _blockSize = frame[1];
+    _separationTime = ConvertSeparationTime (frame[3]);
+  }
+
+  microseconds
+  GetSeparationTime ()
+  {
+    return _separationTime;
+  }
+  uint8_t
+  GetBlockSize ()
+  {
+    return _blockSize;
+  }
+
+  E_FLOW_STATUS
+  GetFlowStatus () { return _flowStatus; }
+
   bool
   IsFinished ()
   {
     return (_index == _length);
   }
-  static bool IsMultiFrame (uint32_t length);
 };
-
-template <>
-bool
-MultiFrameBuilder<StandardCan>::IsMultiFrame (uint32_t length)
-{
-  return (length
-          > (STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH));
-}
-
-template <>
-bool
-MultiFrameBuilder<CanFd>::IsMultiFrame (uint32_t length)
-{
-  return (length > (CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH));
-}

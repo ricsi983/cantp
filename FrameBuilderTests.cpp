@@ -3,40 +3,6 @@
 #include "SingleFrameBuilder.h"
 #include <gtest/gtest.h>
 
-TEST (FrameBuilderTest, IsSingleFrameTestStandardLength)
-{
-  constexpr uint32_t testLength
-      = STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH;
-  ASSERT_TRUE (SingleFrameBuilder<StandardCan>::IsSingleFrame (testLength));
-}
-
-TEST (FrameBuilderTest, IsSingleFrameTestStandardLengthFd)
-{
-  constexpr uint32_t testLength
-      = STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH;
-  ASSERT_TRUE (SingleFrameBuilder<CanFd>::IsSingleFrame (testLength));
-}
-
-TEST (FrameBuilderTest, IsSingleFrameTestExtendedLengthFd)
-{
-  constexpr uint32_t testLength
-      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH;
-  ASSERT_TRUE (SingleFrameBuilder<CanFd>::IsSingleFrame (testLength));
-}
-
-TEST (FrameBuilderTest, IsSingleFrameTestStandardLengthFalse)
-{
-  constexpr uint32_t testLength = STANDARD_CAN_LENGTH;
-  ASSERT_FALSE (SingleFrameBuilder<StandardCan>::IsSingleFrame (testLength));
-}
-
-TEST (FrameBuilderTest, IsSingleFrameTestStandardLengthFalseFd)
-{
-  constexpr uint32_t testLength
-      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH + 1;
-  ASSERT_FALSE (SingleFrameBuilder<CanFd>::IsSingleFrame (testLength));
-}
-
 TEST (FrameBuilderTest, BuildStandardSingleFrameSmallest)
 {
   constexpr uint32_t length = 1;
@@ -125,20 +91,6 @@ TEST (FrameBuilderTest, BuildExtendedSingleFrameWithPadding)
                                               frameLength);
   ASSERT_EQ (frameLength, expectedFrame.size ());
   ASSERT_FALSE (std::memcmp (expectedFrame.data (), resultFrame, frameLength));
-}
-
-TEST (FrameBuilderTest, IsMultiFrameTestStandard)
-{
-  constexpr uint32_t testLength
-      = STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH + 1;
-  ASSERT_TRUE (MultiFrameBuilder<StandardCan>::IsMultiFrame (testLength));
-}
-
-TEST (FrameBuilderTest, IsMultiFrameTestFd)
-{
-  constexpr uint32_t testLength
-      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH + 1;
-  ASSERT_TRUE (MultiFrameBuilder<StandardCan>::IsMultiFrame (testLength));
 }
 
 TEST (FrameBuilderTest, BuildMultiFrameStandardSmallest)
@@ -307,9 +259,231 @@ TEST (FrameBuilderTest, BuildMultiFrameStandardExtented)
   ASSERT_TRUE (frameBuilder.IsFinished ());
 }
 
-TEST (FrameBuilderTest, BuildMultiFrameFd) {}
+TEST (FrameBuilderTest, BuildMultiFrameFdSmallest)
+{
+  constexpr uint16_t payloadLength
+      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH + 1;
+  std::array<uint8_t, payloadLength> payload;
+  std::array<uint8_t, CAN_FD_LENGTH> expectedFirstFrame;
+  std::array<uint8_t, 2> expectedConsecutiveFrame;
+  uint8_t payloadCounter = 1;
+  uint8_t sequenceNumber = 1;
+  expectedFirstFrame.fill (payloadCounter);
+  expectedFirstFrame[0] = static_cast<uint8_t> (E_FRAME_TYPE::FirstFrame) << 4
+                          | static_cast<uint8_t> (payloadLength << 8);
+  expectedFirstFrame[1] = static_cast<uint8_t> (payloadLength);
+  expectedConsecutiveFrame.fill (++payloadCounter);
+  expectedConsecutiveFrame[0]
+      = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame) << 4
+        | sequenceNumber;
 
-TEST (FrameBuilderTest, BuildMultiFrameFdExtended) {}
+  MultiFrameBuilder<CanFd> frameBuilder;
+  payloadCounter = 1;
+  payload.fill (payloadCounter);
+  auto firstFrame
+      = frameBuilder.BuildFirstFrame (payload.data (), payloadLength);
+  ASSERT_FALSE (std::memcmp (firstFrame, expectedFirstFrame.data (),
+                             STANDARD_CAN_LENGTH));
+  ASSERT_FALSE (frameBuilder.IsFinished ());
+  payload.fill (++payloadCounter);
+  uint8_t frameLength;
+  auto consecutiveFrame
+      = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+  ASSERT_EQ (frameLength, expectedConsecutiveFrame.size ());
+  ASSERT_FALSE (
+      std::memcmp (consecutiveFrame, expectedConsecutiveFrame.data (), 2));
+  ASSERT_TRUE (frameBuilder.IsFinished ());
+}
+
+TEST (FrameBuilderTest, BuildMultiFrameFdPadding)
+{
+  constexpr uint16_t payloadLength = MULTI_FRAME_MAX_SIZE / 2;
+  std::array<uint8_t, payloadLength> payload;
+  std::array<uint8_t, CAN_FD_LENGTH> expectedFirstFrame;
+  std::array<std::array<uint8_t, CAN_FD_LENGTH>,
+             (payloadLength - CAN_FD_LENGTH + FIRST_FRAME_HEADER_LENGTH)
+                 / (CAN_FD_LENGTH - CONSECUTIVE_FRAME_HEADER_LENGTH)>
+      expectedConsecutiveFrames;
+  std::array<uint8_t, 48> expectedLastFrame;
+  uint8_t payloadCounter = 1;
+  uint8_t sequenceNumber = 1;
+  expectedFirstFrame.fill (payloadCounter);
+  expectedFirstFrame[0] = static_cast<uint8_t> (E_FRAME_TYPE::FirstFrame) << 4
+                          | static_cast<uint8_t> (payloadLength >> 8);
+  expectedFirstFrame[1] = static_cast<uint8_t> (payloadLength);
+  for (uint32_t i = 0; i < expectedConsecutiveFrames.size (); ++i)
+    {
+      expectedConsecutiveFrames[i].fill (++payloadCounter);
+      expectedConsecutiveFrames[i][0]
+          = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame) << 4
+            | sequenceNumber++;
+      if (sequenceNumber > MAX_SEQUENCE_NUMBER)
+        sequenceNumber = 0;
+    }
+  expectedLastFrame.fill (payloadCounter);
+  expectedLastFrame[0] = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame)
+                             << 4
+                         | sequenceNumber;
+  uint8_t lastFrameLength = 33;
+  CanUtils::AddPadding (expectedLastFrame.data (), lastFrameLength);
+
+  MultiFrameBuilder<CanFd> frameBuilder;
+  payloadCounter = 1;
+  payload.fill (payloadCounter);
+  auto firstFrame
+      = frameBuilder.BuildFirstFrame (payload.data (), payloadLength);
+  ASSERT_FALSE (
+      std::memcmp (firstFrame, expectedFirstFrame.data (), CAN_FD_LENGTH));
+
+  uint8_t frameLength;
+  for (uint32_t i = 0; i < expectedConsecutiveFrames.size (); ++i)
+    {
+      payload.fill (++payloadCounter);
+      auto consecutiveFrame
+          = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+      ASSERT_EQ (frameLength, expectedConsecutiveFrames[i].size ());
+      ASSERT_FALSE (std::memcmp (consecutiveFrame,
+                                 expectedConsecutiveFrames[i].data (),
+                                 frameLength));
+    }
+
+  auto lastFrame
+      = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+  ASSERT_EQ (frameLength, expectedLastFrame.size ());
+  ASSERT_FALSE (
+      std::memcmp (expectedLastFrame.data (), lastFrame, frameLength));
+  ASSERT_TRUE (frameBuilder.IsFinished ());
+}
+
+TEST (FrameBuilderTest, BuildMultiFrameFdLargest)
+{
+  constexpr uint16_t payloadLength = MULTI_FRAME_MAX_SIZE;
+  std::array<uint8_t, payloadLength> payload;
+  std::array<uint8_t, CAN_FD_LENGTH> expectedFirstFrame;
+  std::array<std::array<uint8_t, CAN_FD_LENGTH>,
+             (payloadLength - CAN_FD_LENGTH + FIRST_FRAME_HEADER_LENGTH)
+                 / (CAN_FD_LENGTH - CONSECUTIVE_FRAME_HEADER_LENGTH)>
+      expectedConsecutiveFrames;
+  std::array<uint8_t,
+             (payloadLength - CAN_FD_LENGTH + FIRST_FRAME_HEADER_LENGTH)
+                     % (CAN_FD_LENGTH - CONSECUTIVE_FRAME_HEADER_LENGTH)
+                 + CONSECUTIVE_FRAME_HEADER_LENGTH>
+      expectedLastFrame;
+  uint8_t payloadCounter = 1;
+  uint8_t sequenceNumber = 1;
+  expectedFirstFrame.fill (payloadCounter);
+  expectedFirstFrame[0] = static_cast<uint8_t> (E_FRAME_TYPE::FirstFrame) << 4
+                          | static_cast<uint8_t> (payloadLength >> 8);
+  expectedFirstFrame[1] = static_cast<uint8_t> (payloadLength);
+  for (uint32_t i = 0; i < expectedConsecutiveFrames.size (); ++i)
+    {
+      expectedConsecutiveFrames[i].fill (++payloadCounter);
+      expectedConsecutiveFrames[i][0]
+          = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame) << 4
+            | sequenceNumber++;
+      if (sequenceNumber > MAX_SEQUENCE_NUMBER)
+        sequenceNumber = 0;
+    }
+  expectedLastFrame.fill (payloadCounter);
+  expectedLastFrame[0] = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame)
+                             << 4
+                         | sequenceNumber;
+
+  MultiFrameBuilder<CanFd> frameBuilder;
+  payloadCounter = 1;
+  payload.fill (payloadCounter);
+  auto firstFrame
+      = frameBuilder.BuildFirstFrame (payload.data (), payloadLength);
+  ASSERT_FALSE (
+      std::memcmp (firstFrame, expectedFirstFrame.data (), CAN_FD_LENGTH));
+
+  uint8_t frameLength;
+  for (uint32_t i = 0; i < expectedConsecutiveFrames.size (); ++i)
+    {
+      payload.fill (++payloadCounter);
+      auto consecutiveFrame
+          = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+      ASSERT_EQ (frameLength, expectedConsecutiveFrames[i].size ());
+      ASSERT_FALSE (std::memcmp (consecutiveFrame,
+                                 expectedConsecutiveFrames[i].data (),
+                                 frameLength));
+    }
+
+  auto lastFrame
+      = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+  ASSERT_EQ (frameLength, expectedLastFrame.size ());
+  ASSERT_FALSE (
+      std::memcmp (expectedLastFrame.data (), lastFrame, frameLength));
+  ASSERT_TRUE (frameBuilder.IsFinished ());
+}
+
+TEST (FrameBuilderTest, BuildMultiFrameFdExtended)
+{
+  constexpr uint16_t payloadLength = MULTI_FRAME_MAX_SIZE + 1;
+  std::array<uint8_t, payloadLength> payload;
+  std::array<uint8_t, CAN_FD_LENGTH> expectedFirstFrame;
+  std::array<std::array<uint8_t, CAN_FD_LENGTH>,
+             (payloadLength - CAN_FD_LENGTH
+              + EXTENDED_FIRST_FRAME_HEADER_LENGTH)
+                 / (CAN_FD_LENGTH - CONSECUTIVE_FRAME_HEADER_LENGTH)>
+      expectedConsecutiveFrames;
+  std::array<uint8_t,
+             (payloadLength - CAN_FD_LENGTH
+              + EXTENDED_FIRST_FRAME_HEADER_LENGTH)
+                     % (CAN_FD_LENGTH - CONSECUTIVE_FRAME_HEADER_LENGTH)
+                 + CONSECUTIVE_FRAME_HEADER_LENGTH>
+      expectedLastFrame;
+  uint8_t payloadCounter = 1;
+  uint8_t sequenceNumber = 1;
+  expectedFirstFrame.fill (payloadCounter);
+  expectedFirstFrame[0]
+      = static_cast<uint8_t> (E_FRAME_TYPE::FirstFrame) << 4 | 0;
+  expectedFirstFrame[1] = 0;
+  expectedFirstFrame[2] = static_cast<uint8_t> (payloadLength >> 24);
+  expectedFirstFrame[3] = static_cast<uint8_t> (payloadLength >> 16);
+  expectedFirstFrame[4] = static_cast<uint8_t> (payloadLength >> 8);
+  expectedFirstFrame[5] = static_cast<uint8_t> (payloadLength);
+  for (uint32_t i = 0; i < expectedConsecutiveFrames.size (); ++i)
+    {
+      expectedConsecutiveFrames[i].fill (++payloadCounter);
+      expectedConsecutiveFrames[i][0]
+          = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame) << 4
+            | sequenceNumber++;
+      if (sequenceNumber > MAX_SEQUENCE_NUMBER)
+        sequenceNumber = 0;
+    }
+  expectedLastFrame.fill (payloadCounter);
+  expectedLastFrame[0] = static_cast<uint8_t> (E_FRAME_TYPE::ConsecutiveFrame)
+                             << 4
+                         | sequenceNumber;
+
+  MultiFrameBuilder<CanFd> frameBuilder;
+  payloadCounter = 1;
+  payload.fill (payloadCounter);
+  auto firstFrame
+      = frameBuilder.BuildFirstFrame (payload.data (), payloadLength);
+  ASSERT_FALSE (
+      std::memcmp (firstFrame, expectedFirstFrame.data (), CAN_FD_LENGTH));
+
+  uint8_t frameLength;
+  for (uint32_t i = 0; i < expectedConsecutiveFrames.size (); ++i)
+    {
+      payload.fill (++payloadCounter);
+      auto consecutiveFrame
+          = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+      ASSERT_EQ (frameLength, expectedConsecutiveFrames[i].size ());
+      ASSERT_FALSE (std::memcmp (consecutiveFrame,
+                                 expectedConsecutiveFrames[i].data (),
+                                 frameLength));
+    }
+
+  auto lastFrame
+      = frameBuilder.BuildConsecutiveFrame (payload.data (), frameLength);
+  ASSERT_EQ (frameLength, expectedLastFrame.size ());
+  ASSERT_FALSE (
+      std::memcmp (expectedLastFrame.data (), lastFrame, frameLength));
+  ASSERT_TRUE (frameBuilder.IsFinished ());
+}
 
 /*
 TEST (FrameBuilderTest, BuildExtendedSingleFrame)

@@ -12,6 +12,14 @@ constexpr auto EXTENDED_FIRST_FRAME_HEADER_LENGTH = 6U;
 constexpr auto CONSECUTIVE_FRAME_HEADER_LENGTH = 1U;
 constexpr auto MAX_SEQUENCE_NUMBER = 15U;
 constexpr auto PADDING_BYTE = 0xCCU;
+constexpr auto ST_MS_RANGE_MIN = 0x00U;
+constexpr auto ST_MS_RANGE_MAX = 0x7FU;
+constexpr auto ST_MS_RESERVED_MIN = 0x80U;
+constexpr auto ST_MS_RESERVED_MAX = 0xF0U;
+constexpr auto ST_US_RANGE_MIN = 0xF1U;
+constexpr auto ST_US_RANGE_MAX = 0xF9U;
+constexpr auto ST_US_RANGE_RESERVED_MIN = 0xFAU;
+constexpr auto ST_US_RANGE_RESERVED_MAX = 0xFFU;
 
 enum class E_DIRECTION
 {
@@ -42,4 +50,11 @@ enum class E_FRAME_TYPE : uint8_t
   FirstFrame,
   ConsecutiveFrame,
   FlowControlFrame
+};
+
+enum class E_FLOW_STATUS : uint8_t
+{
+  Continue,
+  Wait,
+  Overflow
 };

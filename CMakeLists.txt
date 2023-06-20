@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(my_project)
 
 # GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
 include(FetchContent)
@@ -20,13 +20,12 @@ add_executable(
   CanTpTest
   CanTp.cpp
   Utils.h
+  Utils.cpp
   UtilTest.cpp
   CanInterface.h
   CanInterface.cpp
   CanTp.h
   CanTpTest.cpp
-  CanTp_2.h
-  CanTp_2.cpp
   CanTypes.h
   CanTpConnection.h
   CanTpSendManager.h
@@ -34,9 +33,9 @@ add_executable(
   CanTpSendManager.cpp
   CanTpReceiveManager.cpp
   SingleFrameBuilder.h
+  SingleFrameBuilder.cpp
   MultiFrameBuilder.h
   FrameBuilderTests.cpp
-  CanTpTests_2.cpp
   MockInterface.h
   MockInterface.cpp
 )

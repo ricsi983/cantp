@@ -1,8 +1,10 @@
 #pragma once
 
 #include "CanTpConstants.h"
+#include "CanTypes.h"
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <limits>
 #include <stdint.h>
 
@@ -66,4 +68,8 @@ struct CanUtils
 
     return found;
   }
+
+  template <typename T> constexpr static uint8_t GetLength ();
+  template <typename T> static bool IsMultiFrame (uint32_t length);
+  template <typename T> static bool IsSingleFrame (uint32_t length);
 };

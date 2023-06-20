@@ -86,3 +86,51 @@ TEST (UtilTest, AddPaddingMaxPadding)
       frame.fill (1);
     }
 }
+
+TEST (UtilTest, IsSingleFrameTestStandardLength)
+{
+  constexpr uint32_t testLength
+      = STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH;
+  ASSERT_TRUE (CanUtils::IsSingleFrame<StandardCan> (testLength));
+}
+
+TEST (UtilTest, IsSingleFrameTestStandardLengthFd)
+{
+  constexpr uint32_t testLength
+      = STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH;
+  ASSERT_TRUE (CanUtils::IsSingleFrame<CanFd> (testLength));
+}
+
+TEST (UtilTest, IsSingleFrameTestExtendedLengthFd)
+{
+  constexpr uint32_t testLength
+      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH;
+  ASSERT_TRUE (CanUtils::IsSingleFrame<CanFd> (testLength));
+}
+
+TEST (UtilTest, IsSingleFrameTestStandardLengthFalse)
+{
+  constexpr uint32_t testLength = STANDARD_CAN_LENGTH;
+  ASSERT_FALSE (CanUtils::IsSingleFrame<StandardCan> (testLength));
+}
+
+TEST (UtilTest, IsSingleFrameTestStandardLengthFalseFd)
+{
+  constexpr uint32_t testLength
+      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH + 1;
+  ASSERT_FALSE (CanUtils::IsSingleFrame<CanFd> (testLength));
+}
+
+TEST (UtilTest, IsMultiFrameTestStandard)
+{
+  constexpr uint32_t testLength
+      = STANDARD_CAN_LENGTH - STANDARD_SINGLE_FRAME_HEADER_LENGTH + 1;
+  ASSERT_TRUE (CanUtils::IsMultiFrame<StandardCan> (testLength));
+}
+
+TEST (UtilTest, IsMultiFrameTestFd)
+{
+  constexpr uint32_t testLength
+      = CAN_FD_LENGTH - FD_SINGLE_FRAME_HEADER_LENGTH + 1;
+  ASSERT_TRUE (CanUtils::IsMultiFrame<CanFd> (testLength));
+}

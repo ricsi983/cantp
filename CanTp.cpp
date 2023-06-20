@@ -1,13 +1,12 @@
-#include <unistd.h>
-#include <thread>
-#include"CanTp.h"
-#include"Utils.h"
 
+
+/*
 void SingleFrameMessage::CreateSingleFrame(uint8_t* buffer, uint8_t length)
 {
     uint8_t firstByte = 0;
-    Utils::SetBits(firstByte, 7, 4, static_cast<uint8_t>(E_FRAME_TYPE::SingleFrame));
-    Utils::SetBits(firstByte, 3, 0, static_cast<uint8_t>(length));
+    Utils::SetBits(firstByte, 7, 4,
+static_cast<uint8_t>(E_FRAME_TYPE::SingleFrame)); Utils::SetBits(firstByte, 3,
+0, static_cast<uint8_t>(length));
 
     singleFrame.push_back(firstByte);
 
@@ -15,16 +14,18 @@ void SingleFrameMessage::CreateSingleFrame(uint8_t* buffer, uint8_t length)
         singleFrame.push_back(buffer[i]);
 }
 
-SingleFrameMessage::SingleFrameMessage(uint8_t* buffer, uint8_t length, uint8_t frameSize) : 
-    _frameSize(frameSize)
+SingleFrameMessage::SingleFrameMessage(uint8_t* buffer, uint8_t length, uint8_t
+frameSize) : _frameSize(frameSize)
 {
     CreateSingleFrame(buffer, length);
 }
 
-void MultiFrameMessage::CreateConsecutiveFrames(uint8_t* buffer, uint16_t length)
+void MultiFrameMessage::CreateConsecutiveFrames(uint8_t* buffer, uint16_t
+length)
 {
     uint8_t firstByte = 0;
-    Utils::SetBits(firstByte, 7, 4, static_cast<uint8_t>(E_FRAME_TYPE::ConsecutiveFrame));
+    Utils::SetBits(firstByte, 7, 4,
+static_cast<uint8_t>(E_FRAME_TYPE::ConsecutiveFrame));
     Utils::SetBits(firstByte, 3, 0, static_cast<uint8_t>(0));
     uint8_t index = 0;
     uint8_t blockCounter = 0;
@@ -61,8 +62,9 @@ void MultiFrameMessage::CreateConsecutiveFrames(uint8_t* buffer, uint16_t length
 void MultiFrameMessage::CreateFirstFrame(uint8_t* buffer, uint16_t length)
 {
     uint8_t firstByte = 0;
-    Utils::SetBits(firstByte, 7, 4, static_cast<uint8_t>(E_FRAME_TYPE::FirstFrame));
-    Utils::SetBits(firstByte, 3, 0, static_cast<uint8_t>(length >> 8));
+    Utils::SetBits(firstByte, 7, 4,
+static_cast<uint8_t>(E_FRAME_TYPE::FirstFrame)); Utils::SetBits(firstByte, 3,
+0, static_cast<uint8_t>(length >> 8));
 
     firstFrame.push_back(firstByte);
     firstFrame.push_back(static_cast<uint8_t>(length));
@@ -71,8 +73,8 @@ void MultiFrameMessage::CreateFirstFrame(uint8_t* buffer, uint16_t length)
         firstFrame.push_back(buffer[i]);
 }
 
-MultiFrameMessage::MultiFrameMessage(uint8_t* buffer, uint16_t length, uint8_t frameSize) :
-    _frameSize(frameSize)
+MultiFrameMessage::MultiFrameMessage(uint8_t* buffer, uint16_t length, uint8_t
+frameSize) : _frameSize(frameSize)
 {
    CreateFirstFrame(buffer, length);
    CreateConsecutiveFrames(&buffer[frameSize - 2], length - frameSize + 2);
@@ -86,7 +88,7 @@ void MultiFrameMessage::AddFrameCounters()
     {
         Utils::SetBits(frame[0], 3, 0, blockCounter);
         ++ blockCounter;
-        if(blockCounter > maxBlockSize) 
+        if(blockCounter > maxBlockSize)
             blockCounter = 1;
     }
 }
@@ -96,7 +98,7 @@ std::vector<uint8_t> MultiFrameMessage::GetPayload()
     std::vector<uint8_t> payload;
     for(uint32_t i = 2; i < 8; i++)
         payload.push_back(firstFrame[i]);
-    
+
     for(const auto& frame : consecutiveFrames)
     {
         for(uint32_t i = 1; i < frame.size(); i ++)
@@ -106,8 +108,8 @@ std::vector<uint8_t> MultiFrameMessage::GetPayload()
     return payload;
 }
 
-CanTp::CanTp(std::shared_ptr<CanInterface> interface, uint8_t receiveBlockSize, uint8_t separationTime) :
-    _interface(interface),
+CanTp::CanTp(std::shared_ptr<CanInterface> interface, uint8_t receiveBlockSize,
+uint8_t separationTime) : _interface(interface),
     _receiveBlockSize(receiveBlockSize),
     _receiveSeparationTime(separationTime),
     _sendBlockSize(0),
@@ -116,13 +118,15 @@ CanTp::CanTp(std::shared_ptr<CanInterface> interface, uint8_t receiveBlockSize, 
     _frameSize = (_interface->IsCanFd()? 64 : 8);
 }
 
-bool CanTp::Connect(std::vector<uint8_t>& firstFrame, uint32_t source, uint32_t destination)
+bool CanTp::Connect(std::vector<uint8_t>& firstFrame, uint32_t source, uint32_t
+destination)
 {
     std::vector<uint8_t> flowControlFrame;
     flowControlFrame.resize(8);
     uint32_t length;
-    if(_interface->SendMessage(&firstFrame[0], firstFrame.size(), destination) == 0)
-        if(_interface->ReceiveMessage(&flowControlFrame[0], &length, source) == 0)
+    if(_interface->SendMessage(&firstFrame[0], firstFrame.size(), destination)
+== 0) if(_interface->ReceiveMessage(&flowControlFrame[0], &length, source) ==
+0)
         {
             ParseFlowControlFrame(flowControlFrame);
             return true;
@@ -133,8 +137,9 @@ bool CanTp::Connect(std::vector<uint8_t>& firstFrame, uint32_t source, uint32_t 
         }
 }
 
-bool CanTp::SendBlock(std::vector<std::vector<uint8_t>>& block, uint32_t source, uint32_t destination)
-{   
+bool CanTp::SendBlock(std::vector<std::vector<uint8_t>>& block, uint32_t
+source, uint32_t destination)
+{
     uint32_t index = 0;
     for(uint8_t i = 0; i < _sendBlockSize; i ++)
     {
@@ -172,36 +177,41 @@ void CanTp::ParseFlowControlFrame(std::vector<uint8_t>& flowControlFrame)
     _sendSeparationTime = flowControlFrame[2];
 }
 
-void CanTp::SendMessage(uint8_t* buffer, uint16_t length, uint32_t source, uint32_t destination)
+void CanTp::SendMessage(uint8_t* buffer, uint16_t length, uint32_t source,
+uint32_t destination)
 {
     if(length <= _frameSize - 1)
     {
-        SingleFrameMessage singleFrameMessage = SingleFrameMessage(buffer, length, _frameSize);
-        _interface->SendMessage(&singleFrameMessage.singleFrame[0], singleFrameMessage.singleFrame.size(), destination);
+        SingleFrameMessage singleFrameMessage = SingleFrameMessage(buffer,
+length, _frameSize);
+        _interface->SendMessage(&singleFrameMessage.singleFrame[0],
+singleFrameMessage.singleFrame.size(), destination);
     }
     else
     {
-        MultiFrameMessage multiFrameMessage = MultiFrameMessage(buffer, length, _frameSize);
-        if(Connect(multiFrameMessage.firstFrame, source, destination))
+        MultiFrameMessage multiFrameMessage = MultiFrameMessage(buffer, length,
+_frameSize); if(Connect(multiFrameMessage.firstFrame, source, destination))
         {
             //multiFrameMessage.AddFrameCounters(_sendBlockSize);
             while(multiFrameMessage.consecutiveFrames.size() != 0)
-                if(!SendBlock(multiFrameMessage.consecutiveFrames, source, destination))
-                    break;
+                if(!SendBlock(multiFrameMessage.consecutiveFrames, source,
+destination)) break;
         }
     }
 }
 
-void CanTp::ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source, uint32_t destination)
+void CanTp::ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source,
+uint32_t destination)
 {
     std::vector<uint8_t> firstFrame;
     firstFrame.resize(8);
     uint32_t firstFrameLength = 0;
-    if(_interface->ReceiveMessage(&firstFrame[0], &firstFrameLength, source) == 0)
+    if(_interface->ReceiveMessage(&firstFrame[0], &firstFrameLength, source) ==
+0)
     {
-        if(static_cast<E_FRAME_TYPE>(firstFrame[0] >> 4) == E_FRAME_TYPE::SingleFrame)
-            memcpy(buffer, &firstFrame[1], firstFrame[0] & 0x0f);
-        else
+        if(static_cast<E_FRAME_TYPE>(firstFrame[0] >> 4) ==
+E_FRAME_TYPE::SingleFrame) memcpy(buffer, &firstFrame[1], firstFrame[0] &
+0x0f); else
         {
             MultiFrameMessage multiFrameMessage;
             multiFrameMessage.firstFrame = firstFrame;
@@ -212,24 +222,25 @@ void CanTp::ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source, u
             Utils::SetBits<uint8_t>(flowControlFrame[0], 3, 0, 0);
             flowControlFrame[1] = _receiveBlockSize;
             flowControlFrame[2] = _receiveSeparationTime;
-            _interface->SendMessage(&flowControlFrame[0], flowControlFrame.size(), destination);
-            
-            uint16_t lengthOfFrame = ((firstFrame[0] & 0x0f) | firstFrame[1]) - 6;
-            uint16_t numberOfFrames = lengthOfFrame / 8 + 1;
-            uint16_t numberOfBlocks = numberOfFrames / _receiveBlockSize;
-            uint16_t blockIndex = 0;
-            for(uint16_t i = 0; i < numberOfFrames;)
+            _interface->SendMessage(&flowControlFrame[0],
+flowControlFrame.size(), destination);
+
+            uint16_t lengthOfFrame = ((firstFrame[0] & 0x0f) | firstFrame[1]) -
+6; uint16_t numberOfFrames = lengthOfFrame / 8 + 1; uint16_t numberOfBlocks =
+numberOfFrames / _receiveBlockSize; uint16_t blockIndex = 0; for(uint16_t i =
+0; i < numberOfFrames;)
             {
                 if(blockIndex == _receiveBlockSize)
                 {
-                    _interface->SendMessage(&flowControlFrame[0], flowControlFrame.size(), destination);
-                    blockIndex = 0;
+                    _interface->SendMessage(&flowControlFrame[0],
+flowControlFrame.size(), destination); blockIndex = 0;
                 }
                 else
                 {
                     uint32_t lengthOfBlock = 0;
                     _interface->ReceiveMessage(block, &lengthOfBlock, source);
-                    multiFrameMessage.consecutiveFrames.emplace_back(block, block + lengthOfBlock);
+                    multiFrameMessage.consecutiveFrames.emplace_back(block,
+block + lengthOfBlock);
                     ++blockIndex;
                     ++i;
                 }
@@ -240,3 +251,4 @@ void CanTp::ReceiveMessage(uint8_t* buffer, uint16_t& length, uint32_t source, u
         }
     }
 }
+*/
