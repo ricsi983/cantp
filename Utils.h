@@ -69,7 +69,23 @@ struct CanUtils
     return found;
   }
 
-  template <typename T> constexpr static uint8_t GetLength ();
+  static E_FRAME_TYPE
+  GetFrameType (uint8_t firstByte)
+  {
+    return static_cast<E_FRAME_TYPE> ((firstByte & FRAME_TYPE_MASK)
+                                      >> FRAME_TYPE_SHIFT);
+  }
+
+  template <typename T>
+  static constexpr uint8_t
+  GetLength ()
+  {
+    using frame_type =
+        typename std::conditional<std::is_same<T, StandardCan>::value,
+                                  std::array<uint8_t, STANDARD_CAN_LENGTH>,
+                                  std::array<uint8_t, CAN_FD_LENGTH> >::type;
+    return sizeof (frame_type);
+  }
   template <typename T> static bool IsMultiFrame (uint32_t length);
   template <typename T> static bool IsSingleFrame (uint32_t length);
 };

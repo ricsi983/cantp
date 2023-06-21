@@ -142,7 +142,7 @@ public:
   {
     _flowStatus = static_cast<E_FLOW_STATUS> (frame[0] & 0x0F);
     _blockSize = frame[1];
-    _separationTime = ConvertSeparationTime (frame[3]);
+    _separationTime = ConvertSeparationTime (frame[2]);
   }
 
   microseconds

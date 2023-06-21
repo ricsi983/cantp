@@ -1,6 +1,7 @@
+#pragma once
 #include <stdint.h>
 
-using SendFunctionType = uint32_t (*) (uint8_t *, uint32_t, uint32_t);
+using SendFunctionType = uint32_t (*) (uint8_t *, uint8_t, uint32_t);
 using ReceiveFunctionType = uint32_t (*) (uint8_t *, uint8_t *, uint32_t);
 using SetTimeoutFunctionType = void (*) (uint32_t);
 

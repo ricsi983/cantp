@@ -31,15 +31,8 @@ CanUtils::IsMultiFrame<CanFd> (uint32_t length)
 }
 
 template <>
-uint8_t
+constexpr uint8_t
 CanUtils::GetLength<CanFd> ()
 {
   return CAN_FD_LENGTH;
-}
-
-template <>
-uint8_t
-CanUtils::GetLength<StandardCan> ()
-{
-  return STANDARD_CAN_LENGTH;
 }

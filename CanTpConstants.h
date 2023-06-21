@@ -20,6 +20,8 @@ constexpr auto ST_US_RANGE_MIN = 0xF1U;
 constexpr auto ST_US_RANGE_MAX = 0xF9U;
 constexpr auto ST_US_RANGE_RESERVED_MIN = 0xFAU;
 constexpr auto ST_US_RANGE_RESERVED_MAX = 0xFFU;
+constexpr auto FRAME_TYPE_MASK = 0xF0;
+constexpr auto FRAME_TYPE_SHIFT = 4U;
 
 enum class E_DIRECTION
 {

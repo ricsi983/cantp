@@ -28,13 +28,10 @@ add_executable(
   CanTpTest.cpp
   CanTypes.h
   CanTpConnection.h
-  CanTpSendManager.h
-  CanTpReceiveManager.h
-  CanTpSendManager.cpp
-  CanTpReceiveManager.cpp
   SingleFrameBuilder.h
   SingleFrameBuilder.cpp
   MultiFrameBuilder.h
+  FrameSender.h
   FrameBuilderTests.cpp
   MockInterface.h
   MockInterface.cpp
