@@ -32,6 +32,9 @@ public:
     std::visit (FrameSender<T> (_interface, handle), builder);
   }
 
-  void ReceiveMessage (uint8_t *payload, uint32_t &length, uint32_t source,
-                       uint32_t destination);
+  void
+  ReceiveMessage (uint8_t *payload, uint32_t &length, uint32_t source,
+                  uint32_t destination)
+  {
+  }
 };

@@ -16,9 +16,27 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+add_library(
+  CanTpDll 
+  SHARED 
+  Utils.h
+  Utils.cpp
+  CanInterface.h
+  CanInterface.cpp
+  CanTp.h
+  CanTypes.h
+  CanTpConnection.h
+  SingleFrameBuilder.h
+  SingleFrameBuilder.cpp
+  MultiFrameBuilder.h
+  FrameSender.h
+  MockInterface.h
+  MockInterface.cpp
+  CanTpDll.h
+  CanTpDll.cpp)
+
 add_executable(
   CanTpTest
-  CanTp.cpp
   Utils.h
   Utils.cpp
   UtilTest.cpp
